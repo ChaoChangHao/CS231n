@@ -45,7 +45,6 @@ class LinearClassifier(object):
             y_batch = None
 
             #########################################################################
-            # TODO:                                                                 #
             # Sample batch_size elements from the training data and their           #
             # corresponding labels to use in this round of gradient descent.        #
             # Store the data in X_batch and their corresponding labels in           #
@@ -57,7 +56,9 @@ class LinearClassifier(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            sample_idices = np.random.choice(num_train, batch_size)
+            X_batch = X[sample_idices]
+            y_batch = y[sample_idices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -67,12 +68,11 @@ class LinearClassifier(object):
 
             # perform parameter update
             #########################################################################
-            # TODO:                                                                 #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.W = self.W - grad * learning_rate
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -102,7 +102,8 @@ class LinearClassifier(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        predict_scores = X.dot(self.W)
+        y_pred = np.argmax(predict_scores, axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return y_pred
