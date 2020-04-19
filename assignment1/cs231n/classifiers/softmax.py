@@ -26,15 +26,31 @@ def softmax_loss_naive(W, X, y, reg):
     dW = np.zeros_like(W)
 
     #############################################################################
-    # TODO: Compute the softmax loss and its gradient using explicit loops.     #
     # Store the loss in loss and the gradient in dW. If you are not careful     #
     # here, it is easy to run into numeric instability. Don't forget the        #
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_samples = X.shape[0]
+    num_classes = W.shape[1]
+    
+    for idx in range(num_samples):
+        pred = X[idx].dot(W)
+        pred -= pred.max()
+        pred = np.exp(pred) / np.sum(np.exp(pred)) # softmax -> (C, )
+        loss += -np.log(pred[y[idx]])
+        
+        for j in range(num_classes):
+            if j == y[idx]:
+                dW[:, j] += -(1 - pred[j]) * X[idx]
+            else:
+                dW[:, j] += pred[j] * X[idx]
 
+    loss = loss / num_samples
+    loss += reg * np.sum(W * W)
+    dW /= num_samples
+    dW += 2 * reg * W
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
@@ -51,14 +67,26 @@ def softmax_loss_vectorized(W, X, y, reg):
     dW = np.zeros_like(W)
 
     #############################################################################
-    # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
     # Store the loss in loss and the gradient in dW. If you are not careful     #
     # here, it is easy to run into numeric instability. Don't forget the        #
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_samples = X.shape[0]
+    num_classes = W.shape[1]
+    
+    all_pred = X.dot(W)
+    all_pred -= all_pred.max(axis=1, keepdims=True)
+    all_pred = np.exp(all_pred) / np.sum(np.exp(all_pred), axis=1, keepdims=True) # N x C
+    loss = -np.log(all_pred[range(num_samples), y]).sum()
+    loss = loss / num_samples
+    loss += reg * np.sum(W * W)
+
+    all_pred[range(num_samples), y] = -(1 - all_pred[range(num_samples), y])
+    dW = np.dot(X.T, all_pred) # D x N  dot  N x C
+    dW /= num_samples
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
