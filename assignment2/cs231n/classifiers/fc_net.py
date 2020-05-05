@@ -284,7 +284,7 @@ class FullyConnectedNet(object):
                 bn_params = self.bn_params[idx-1]
 
             hidden, cache = affine_norm_relu_forward(
-                hidden, W, b, gamma, beta, bn_params, self.normalization)
+                hidden, W, b, gamma, beta, bn_params, self.normalization, self.dropout_param)
             caches.append(cache)
         scores, cache = affine_forward(hidden, self.params['W{}'.format(
             self.num_layers)], self.params['b{}'.format(self.num_layers)])
@@ -339,7 +339,7 @@ class FullyConnectedNet(object):
         return loss, grads
 
 
-def affine_norm_relu_forward(x, w, b, gamma, beta, bn_param, normalization=None):
+def affine_norm_relu_forward(x, w, b, gamma, beta, bn_param, normalization=None, dropout_param=None):
     """
     Convenience layer that perorms an affine transform followed by BatchNorm & ReLU
 
@@ -351,14 +351,16 @@ def affine_norm_relu_forward(x, w, b, gamma, beta, bn_param, normalization=None)
     - out: Output from the FC + BN + ReLU
     - cache: Object to give to the backward pass
     """
-    norm_cache = None
+    norm_cache = dropout_cache = None
     out, fc_cache = affine_forward(x, w, b)
     if normalization == "batchnorm":
         out, norm_cache = batchnorm_forward(out, gamma, beta, bn_param)
     elif normalization == "layernorm":
         out, norm_cache = layernorm_forward(out, gamma, beta, bn_param)
     out, relu_cache = relu_forward(out)
-    cache = (fc_cache, norm_cache, relu_cache)
+    if dropout_param.get("p", False):
+        out, dropout_cache = dropout_forward(out, dropout_param)
+    cache = (fc_cache, norm_cache, relu_cache, dropout_cache)
     return out, cache
 
 
@@ -367,7 +369,9 @@ def affine_norm_relu_backward(dout, cache, normalization=None):
     Backward pass for the affine-bn-relu convenience layer
     """
     dgamma = dbeta = None
-    fc_cache, norm_cache, relu_cache = cache
+    fc_cache, norm_cache, relu_cache, dropout_cache = cache
+    if dropout_cache is not None:
+        dout = dropout_backward(dout, dropout_cache)
     dout = relu_backward(dout, relu_cache)
     if normalization == "batchnorm":
         dout, dgamma, dbeta = batchnorm_backward_alt(dout, norm_cache)
