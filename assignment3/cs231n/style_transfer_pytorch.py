@@ -26,7 +26,9 @@ def content_loss(content_weight, content_current, content_original):
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    content_loss = content_weight * ((content_current - content_original) ** 2).sum()
+
+    return content_loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -45,8 +47,14 @@ def gram_matrix(features, normalize=True):
       (optionally normalized) Gram matrices for the N input images.
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, C, H, W = features.size()
+    features = features.view(N, C, H*W) # NxCxM
 
-    pass
+    features_T = features.permute(0,2,1)       # NxMxC
+    gram = torch.matmul(features, features_T)  # NxMxC x NxCxM = NxCxC
+    if normalize:
+        gram = gram / (C*H*W)
+    return gram
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -72,8 +80,10 @@ def style_loss(feats, style_layers, style_targets, style_weights):
     # Hint: you can do this with one for loop over the style layers, and should
     # not be very much code (~5 lines). You will need to use your gram_matrix function.
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    style_loss = 0
+    for style_layer, style_target, style_weight in zip(style_layers, style_targets, style_weights):
+        style_loss += (gram_matrix(feats[style_layer]) - style_target).pow(2).sum() * style_weight
+    return style_loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -92,9 +102,15 @@ def tv_loss(img, tv_weight):
     # Your implementation should be vectorized and not require any loops!
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    N, C, H, W = img.size()
+    x1 = img[:, :, 0:H-1, :]
+    x2 = img[:, :, 1:H, :]
+    y1 = img[:, :, :, 0:W-1]
+    y2 = img[:, :, :, 1:W]
+    tv_loss = ((x2-x1).pow(2).sum() + (y2-y1).pow(2).sum()) * tv_weight
+    return tv_loss
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
 def preprocess(img, size=512):
     """ Preprocesses a PIL JPG Image object to become a Pytorch tensor
         that is ready to be used as an input into the CNN model.
