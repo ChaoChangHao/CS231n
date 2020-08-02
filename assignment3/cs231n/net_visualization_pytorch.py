@@ -26,7 +26,7 @@ def compute_saliency_maps(X, y, model):
 
     saliency = None
     ##############################################################################
-    # TODO: Implement this function. Perform a forward and backward pass through #
+    #     : Implement this function. Perform a forward and backward pass through #
     # the model to compute the gradient of the correct class score with respect  #
     # to each input image. You first want to compute the loss over the correct   #
     # scores (we'll combine losses across a batch by summing), and then compute  #
@@ -34,7 +34,11 @@ def compute_saliency_maps(X, y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    output = model(X)
+    loss = torch.nn.CrossEntropyLoss()(output, y)
+    loss.backward()
+    grads = X.grad.abs()
+    saliency = grads.max(dim=1)[0]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -62,7 +66,7 @@ def make_fooling_image(X, target_y, model):
 
     learning_rate = 1
     ##############################################################################
-    # TODO: Generate a fooling image X_fooling that the model will classify as   #
+    #     : Generate a fooling image X_fooling that the model will classify as   #
     # the class target_y. You should perform gradient ascent on the score of the #
     # target class, stopping when the model is fooled.                           #
     # When computing an update step, first normalize the gradient:               #
@@ -75,8 +79,18 @@ def make_fooling_image(X, target_y, model):
     # You can print your progress over iterations to check your algorithm.       #
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    import tqdm
+    for i in tqdm.tqdm(range(100)):
+        X_fooling.requires_grad_()
+        output = model(X_fooling)
+        if output.data.max(1)[1].item() == target_y:
+            break
+        scores = output.gather(1, torch.LongTensor([target_y]).view(-1,1)).squeeze().sum()
+        scores.backward()
+        X_fooling.detach_()
+        g = X_fooling.grad
+        dX = learning_rate * g / g.norm()
+        X_fooling += dX
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -86,7 +100,7 @@ def make_fooling_image(X, target_y, model):
 
 def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate):
     ########################################################################
-    # TODO: Use the model to compute the gradient of the score for the     #
+    #     : Use the model to compute the gradient of the score for the     #
     # class target_y with respect to the pixels of the image, and make a   #
     # gradient step on the image using the learning rate. Don't forget the #
     # L2 regularization term!                                              #
@@ -94,7 +108,14 @@ def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate)
     ########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    img.requires_grad_()
+    output = model(img)
+    score = output.squeeze()[target_y] - l2_reg * (img.norm() ** 2)
+    score.backward()
+
+    img.detach_()
+    grad = img.grad
+    img = img + learning_rate * grad / grad.norm()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ########################################################################
